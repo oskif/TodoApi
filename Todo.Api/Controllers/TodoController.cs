@@ -8,8 +8,8 @@ namespace Todo.Api.Controllers
     [ApiController]
     public class TodoController : ControllerBase
     {
-        private readonly TodoService _todoService;
-        public TodoController(TodoService todoService)
+        private readonly ITodoService _todoService;
+        public TodoController(ITodoService todoService)
         {
             _todoService = todoService;
         }
@@ -47,7 +47,7 @@ namespace Todo.Api.Controllers
                 return BadRequest("Id must be greater then 0");
             }
 
-            TodoResponse? response = _todoService.getTodoById(id);
+            TodoResponse? response = _todoService.GetTodoById(id);
             
             if (response is null)
             {

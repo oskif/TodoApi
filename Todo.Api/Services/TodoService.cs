@@ -1,17 +1,53 @@
-using Microsoft.OpenApi.Validations;
 using Todo.Api.Data;
 using Todo.Api.Entities;
 using Todo.Api.Model.Dtos;
 
 namespace Todo.Api.Services;
-
-public class TodoService
+public class TodoService : ITodoService
 {
     private readonly ApplicationDbContext _context;
 
     public TodoService(ApplicationDbContext context)
     {
         _context = context;
+    }
+
+    public TodoResponse AddTodo(TodoAddRquest request)
+    {
+        TodoEntity todo = new()
+        {
+            Title = request.Title,
+            Description = request.Description,
+            ExpirationDateTime = request.ExpirationDateTime,
+            PercentOfComplete = request.PercentOfComplete
+        };
+
+        _context.Todos.Add(todo);
+        _context.SaveChanges();
+
+        return new()
+        {
+            Id = todo.Id,
+            Title = todo.Title,
+            Description = todo.Description,
+            PercentOfComplete = todo.PercentOfComplete,
+            ExpirationDateTime = todo.ExpirationDateTime
+        };
+    }
+
+    public bool DeleteTodoById(int id)
+    {
+        var todo = _context.Todos.Where(t => t.Id.Equals(id)).First();
+
+        if (todo is null)
+        {
+            return false;
+        }
+
+        _context.Todos.Remove(todo);
+        _context.SaveChanges();
+
+        return true;
     }
 
     public IEnumerable<TodoResponse> GetAllTodos()
@@ -30,7 +66,12 @@ public class TodoService
         );
     }
 
-    public TodoResponse? getTodoById(int id)
+    public IEnumerable<TodoResponse> GetIncomingTodos(string incoming)
+    {
+        throw new NotImplementedException();
+    }
+
+    public TodoResponse? GetTodoById(int id)
     {
         var todo = _context.Todos.Where(t => t.Id.Equals(id)).FirstOrDefault();
 
@@ -49,43 +90,6 @@ public class TodoService
         };
     }
 
-    public TodoResponse AddTodo(TodoAddRquest request)
-    {
-        TodoEntity todo = new()
-        {
-            Title = request.Title,
-            Description = request.Description,
-            ExpirationDateTime = request.ExpirationDateTime,
-            PercentOfComplete = request.PercentOfComplete
-        };
-
-        _context.Todos.Add(todo);
-        _context.SaveChanges();
-
-        return new()
-        {
-            Id= todo.Id,
-            Title = todo.Title,
-            Description = todo.Description,
-            PercentOfComplete = todo.PercentOfComplete,
-            ExpirationDateTime = todo.ExpirationDateTime
-        }; 
-    }
-
-    public bool DeleteTodoById(int id)
-    {
-        var todo = _context.Todos.Where(t => t.Id.Equals(id)).First();
-
-        if (todo is null)
-        {
-            return false;
-        }
-
-        _context.Todos.Remove(todo);
-        _context.SaveChanges();
-
-        return true;
-    }
     public bool MarkTodoAsDone(int id)
     {
         var todo = _context.Todos.Where(t => t.Id.Equals(id)).First();
@@ -101,20 +105,6 @@ public class TodoService
         return true;
     }
 
-    public bool UpdatePercentOfComplete(int id, decimal percentOfComplete)
-    {
-        var todo = _context.Todos.Where(t => t.Id.Equals(id)).First();
-
-        if (todo is null)
-        {
-            return false;
-        }
-
-        todo.PercentOfComplete = percentOfComplete;
-        _context.SaveChanges();
-
-        return true;
-    }
 
     public TodoResponse? UpdateTodo(int id, TodoUpdateRequest request)
     {
@@ -141,48 +131,18 @@ public class TodoService
         };
     }
 
-    public IEnumerable<TodoResponse> GetIncomingTodos(string incoming)
+    public bool UpdatePercentOfComplete(int id, decimal percentOfComplete)
     {
-        DateTime currentDate = DateTime.Now;
-        List<TodoEntity> list = new();
-        switch (incoming)
+        var todo = _context.Todos.Where(t => t.Id.Equals(id)).First();
+
+        if (todo is null)
         {
-            case "today":
-                list = _context.Todos.Where(t =>
-                    t.ExpirationDateTime.Date == currentDate.Date &&
-                    t.ExpirationDateTime.TimeOfDay > currentDate.TimeOfDay &&
-                    t.PercentOfComplete < 100).ToList();
-                break;
-
-            case "tomorrow":
-                var tomorrowDate = currentDate.AddDays(1);
-                list = _context.Todos.Where(t => 
-                    t.ExpirationDateTime.Date == tomorrowDate.Date &&
-                    t.PercentOfComplete < 100).ToList();
-                break;
-
-            case "current_week":
-                int dayOfWeek = (int)currentDate.Date.DayOfWeek;
-
-                list = _context.Todos.Where(t =>
-                    (t.ExpirationDateTime.Date >= currentDate.Date && t.ExpirationDateTime.TimeOfDay > currentDate.TimeOfDay) &&
-                    t.ExpirationDateTime.Date < currentDate.AddDays(7 - dayOfWeek).Date &&
-                    t.PercentOfComplete < 100
-                    ).ToList();
-                break;
-
-            default:
-                return [];
+            return false;
         }
-        return list.Select(item =>
-            new TodoResponse()
-            {
-                Id = item.Id,
-                Title = item.Title,
-                Description = item.Description,
-                ExpirationDateTime = item.ExpirationDateTime,
-                PercentOfComplete = item.PercentOfComplete
-            }
-        );
+
+        todo.PercentOfComplete = percentOfComplete;
+        _context.SaveChanges();
+
+        return true;
     }
 }

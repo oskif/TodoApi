@@ -11,7 +11,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 );
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<TodoService>();
+builder.Services.AddScoped<ITodoService, TodoService>();
 
 var app = builder.Build();
 
