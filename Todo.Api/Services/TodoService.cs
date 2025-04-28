@@ -1,3 +1,4 @@
+using Microsoft.OpenApi.Validations;
 using Todo.Api.Data;
 using Todo.Api.Entities;
 using Todo.Api.Model.Dtos;
@@ -48,7 +49,7 @@ public class TodoService
         };
     }
 
-    public void AddTodo(TodoAddRquest request)
+    public TodoResponse AddTodo(TodoAddRquest request)
     {
         TodoEntity todo = new()
         {
@@ -60,6 +61,15 @@ public class TodoService
 
         _context.Todos.Add(todo);
         _context.SaveChanges();
+
+        return new()
+        {
+            Id= todo.Id,
+            Title = todo.Title,
+            Description = todo.Description,
+            PercentOfComplete = todo.PercentOfComplete,
+            ExpirationDateTime = todo.ExpirationDateTime
+        }; 
     }
 
     public bool DeleteTodoById(int id)
@@ -133,25 +143,32 @@ public class TodoService
 
     public IEnumerable<TodoResponse> GetIncomingTodos(string incoming)
     {
-        DateTime currentDate = DateTime.UtcNow;
+        DateTime currentDate = DateTime.Now;
         List<TodoEntity> list = new();
         switch (incoming)
         {
             case "today":
-                list = _context.Todos.Where(t => t.ExpirationDateTime.Date == currentDate.Date).ToList();
+                list = _context.Todos.Where(t =>
+                    t.ExpirationDateTime.Date == currentDate.Date &&
+                    t.ExpirationDateTime.TimeOfDay > currentDate.TimeOfDay &&
+                    t.PercentOfComplete < 100).ToList();
                 break;
 
             case "tomorrow":
                 var tomorrowDate = currentDate.AddDays(1);
-                list = _context.Todos.Where(t => t.ExpirationDateTime.Date == tomorrowDate.Date).ToList();
+                list = _context.Todos.Where(t => 
+                    t.ExpirationDateTime.Date == tomorrowDate.Date &&
+                    t.PercentOfComplete < 100).ToList();
                 break;
 
-            case "this_week":
+            case "current_week":
                 int dayOfWeek = (int)currentDate.Date.DayOfWeek;
 
                 list = _context.Todos.Where(t =>
-                    t.ExpirationDateTime.Date > currentDate &&
-                    t.ExpirationDateTime.Date < currentDate.AddDays(7 - dayOfWeek)).ToList();
+                    (t.ExpirationDateTime.Date >= currentDate.Date && t.ExpirationDateTime.TimeOfDay > currentDate.TimeOfDay) &&
+                    t.ExpirationDateTime.Date < currentDate.AddDays(7 - dayOfWeek).Date &&
+                    t.PercentOfComplete < 100
+                    ).ToList();
                 break;
 
             default:

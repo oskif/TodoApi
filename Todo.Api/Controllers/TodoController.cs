@@ -14,91 +14,161 @@ namespace Todo.Api.Controllers
             _todoService = todoService;
         }
         [HttpGet]
+        [ProducesResponseType(200, Type = typeof(List<TodoResponse>))]
         public IActionResult GetAllTodos()
         {
-            return Ok(_todoService.GetAllTodos());
+            var responmse = _todoService.GetAllTodos();
+            return Ok(responmse);
         }
 
         [HttpPost]
+        [ProducesResponseType(201, Type = typeof(TodoResponse))]
+        [ProducesResponseType(400)]
         public IActionResult AddTodo([FromBody] TodoAddRquest request)
         {
-            _todoService.AddTodo(request);
-            return Created();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var response = _todoService.AddTodo(request);
+
+            return Created($"api/todos/{response.Id}", response);
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(200, Type = typeof(TodoResponse))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public IActionResult GetTodoById(int id)
         {
+            if (id <= 0)
+            {
+                return BadRequest("Id must be greater then 0");
+            }
+
             TodoResponse? response = _todoService.getTodoById(id);
+            
+            if (response is null)
+            {
+                return NotFound();
+            }
+
             return Ok(response);
         }
 
         [HttpPatch("{id}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public IActionResult MarkTodoAsDone(int id)
         {
+            if (id <= 0)
+            {
+                return BadRequest("Id must be greater then 0");
+            }
+
             bool result = _todoService.MarkTodoAsDone(id);
 
-            if (result)
+            if (!result)
             {
-                return Ok();
+                return NotFound();
             }
 
             return NoContent();
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public IActionResult DeleteById(int id)
         {
+            if (id <= 0)
+            {
+                return BadRequest("Id must be greater then 0");
+            }
+
             bool result = _todoService.DeleteTodoById(id);
 
-            if (result)
+            if (!result)
             {
-                return Ok();
+                return NotFound();
             }
 
             return NoContent();
         }
 
         [HttpPatch("{id}/percent")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public IActionResult UpdatePercentOfComplete(int id, [FromQuery(Name = "percent")] decimal percentOfComplete)
         {
+            if (id <= 0)
+            {
+                return BadRequest("Id must be greater then 0");
+            }
+
+            if (percentOfComplete < 0 && percentOfComplete > 100)
+            {
+                return BadRequest("PercentOfComplete must be from range 0 to 100");
+            }
+
             bool result = _todoService.UpdatePercentOfComplete(id, percentOfComplete);
 
-            if (result)
+            if (!result)
             {
-                return Ok();
+                return NotFound();
             }
 
             return NoContent();
         }
 
         [HttpPut("{id}")]
+        [ProducesResponseType(200, Type = typeof(TodoResponse))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
         public IActionResult UpdateTodo(int id, [FromBody] TodoUpdateRequest request)
         {
+            if (id <= 0)
+            {
+                return BadRequest("Id must be greater then 0");
+            }
+
             var response = _todoService.UpdateTodo(id, request);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             if (response is null)
             {
-                return NoContent();
+                return NotFound();
             }
 
             return Ok(response);
         }
 
         [HttpGet("incoming")]
+        [ProducesResponseType(200, Type = typeof(List<TodoResponse>))]
+        [ProducesResponseType(400)]
         public IActionResult GetIncomingTodos([FromQuery(Name = "incoming")] string incoming)
         {
             var allowedParams = new List<string>()
             {
-                "today", "tomorrow", "curent_week"
+                "today", "tomorrow", "current_week"
             };
 
             if (!allowedParams.Contains(incoming.ToLower()))
             {
-                return BadRequest();
+                return BadRequest("Param incoming accepts only today, tomorrow and current_week");
             }
 
-            return Ok(incoming);
+            var result = _todoService.GetIncomingTodos(incoming);
+
+            return Ok(result);
         }
     }
 }
