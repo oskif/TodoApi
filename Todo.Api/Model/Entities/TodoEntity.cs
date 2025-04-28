@@ -17,10 +17,10 @@ public class TodoEntity
     [Column("description")]
     public required string Description { get; set; }
 
-    [Column("expiration_date_time")]
+    [Column("expiration_date_time", TypeName = "timestamp without time zone")]
     public required DateTime ExpirationDateTime { get; set; }
 
-    [Column("percent_of_complete")]
+    [Column("percent_of_complete", TypeName = "numeric(5, 2)")]
     [Range(0, 100)]
     public decimal PercentOfComplete { get; set; }
 }
