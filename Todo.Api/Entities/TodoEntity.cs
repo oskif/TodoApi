@@ -21,5 +21,6 @@ public class TodoEntity
     public required DateTime ExpirationDateTime { get; set; }
 
     [Column("percent_of_complete")]
+    [Range(0, 100)]
     public decimal PercentOfComplete { get; set; }
 }
